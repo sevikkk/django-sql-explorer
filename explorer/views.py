@@ -1,4 +1,4 @@
-from django.http.response import HttpResponseRedirect, HttpResponse
+from django.http.response import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.views.generic.base import View
@@ -62,7 +62,7 @@ def download_query(request, query_id):
 def csv_from_sql(request):
     sql = request.POST.get('sql', None)
     if not sql:
-        return PlayQueryView.render(request)
+        return render_to_response('explorer/play.html', {'title': 'Playground'})
     return build_download_response(Query(sql=sql, title="Playground"), request)
 
 
@@ -172,29 +172,24 @@ class PlayQueryView(ExplorerContextMixin, View):
         return super(PlayQueryView, self).dispatch(*args, **kwargs)
 
     def get(self, request):
+        vm = RequestContext(request, {'title': 'Playground'})
+
         if url_get_query_id(request):
             query = get_object_or_404(Query, pk=url_get_query_id(request))
-            return self.render_with_sql(request, query)
-        if url_get_log_id(request):
+            vm = query_viewmodel(request, query, title="Playground")
+        elif url_get_log_id(request):
             log = get_object_or_404(QueryLog, pk=url_get_log_id(request))
             query = Query(sql=log.sql, title="Playground")
-            return self.render_with_sql(request, query)
-        return self.render(request)
+            vm = query_viewmodel(request, query, title="Playground")
+
+        return self.render_template('explorer/play.html', vm)
 
     def post(self, request):
         sql = request.POST.get('sql', None)
-        if not sql:
-            return PlayQueryView.render(request)
         query = Query(sql=sql, title="Playground")
-        query.log(request.user)
-        return self.render_with_sql(request, query)
-
-    def render(self, request):
-        c = RequestContext(request, {'title': 'Playground'})
-        return self.render_template('explorer/play.html', c)
-
-    def render_with_sql(self, request, query):
-        return self.render_template('explorer/play.html', query_viewmodel(request, query, title="Playground"))
+        QueryLog.objects.log_query(query, request.user)
+        vm = query_viewmodel(request, query, title="Playground")
+        return self.render_template('explorer/play.html', vm)
 
 
 class QueryView(ExplorerContextMixin, View):
@@ -204,10 +199,11 @@ class QueryView(ExplorerContextMixin, View):
         return super(QueryView, self).dispatch(*args, **kwargs)
 
     def get(self, request, query_id):
-        query, form = QueryView.get_instance_and_form(request, query_id)
+        query = get_object_or_404(Query, pk=query_id)
+        form = QueryForm(request.POST if len(request.POST) else None, instance=query)
         query.save()  # updates the modified date
         vm = query_viewmodel(request, query, form=form, message=None)
-        return self.render_template('explorer/query.html', vm)
+        return render_to_response('explorer/query.html', vm)
 
     def post(self, request, query_id):
         if not EXPLORER_PERMISSION_CHANGE(request.user):
@@ -215,18 +211,19 @@ class QueryView(ExplorerContextMixin, View):
                 reverse_lazy('query_detail', kwargs={'query_id': query_id})
             )
 
-        query, form = QueryView.get_instance_and_form(request, query_id)
-        success = form.save() if form.is_valid() else None
-        if form.has_changed():
-            query.log(request.user)
-        vm = query_viewmodel(request, query, form=form, message="Query saved." if success else None)
-        return self.render_template('explorer/query.html', vm)
-
-    @staticmethod
-    def get_instance_and_form(request, query_id):
         query = get_object_or_404(Query, pk=query_id)
         form = QueryForm(request.POST if len(request.POST) else None, instance=query)
-        return query, form
+
+        if form.has_changed():
+            QueryLog.objects.log_query(query, request.user)
+
+        message = None
+        if form.is_valid():
+            form.save()
+            message = "Query saved"
+
+        vm = query_viewmodel(request, query, form=form, message=message)
+        return render_to_response('explorer/query.html', vm)
 
 
 def query_viewmodel(request, query, title=None, form=None, message=None):

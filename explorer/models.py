@@ -13,6 +13,7 @@ class Query(models.Model):
     created_by_user = models.ForeignKey(get_user_model(), null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_run_date = models.DateTimeField(auto_now=True)
+    #database = models.CharField(null=True, blank=True, max_length=255)
 
     class Meta:
         ordering = ['title']
@@ -64,9 +65,12 @@ class Query(models.Model):
     def get_absolute_url(self):
         return reverse("query_detail", kwargs={'query_id': self.id})
 
-    def log(self, user):
-        log_entry = QueryLog(sql=self.sql, query_id=self.id, run_by_user=user, is_playground=not bool(self.id))
-        log_entry.save()
+
+class QueryLogManager(models.Manager):
+
+    def log_query(self, query, user, playground=False):
+        return self.create(sql=query.sql, query=query,
+                           run_by_user=user, is_playground=playground)
 
 
 class QueryLog(models.Model):
@@ -76,3 +80,5 @@ class QueryLog(models.Model):
     is_playground = models.BooleanField(default=False)
     run_by_user = models.ForeignKey(get_user_model(), null=True, blank=True)
     run_at = models.DateTimeField(auto_now_add=True)
+
+    objects = QueryLogManager()
