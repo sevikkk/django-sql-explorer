@@ -26,6 +26,7 @@ class Query(models.Model):
     last_auto_run_date = models.DateTimeField(null=True,blank=True)
     last_auto_run_result = models.TextField(null=True,blank=True, max_length=10000)
     autorun_state= models.IntegerField(default=0)
+    post_cache_sql = models.TextField(null=True,blank=True, max_length=10000)
 
     def __init__(self, *args, **kwargs):
         self.params = kwargs.get('params')
@@ -72,6 +73,10 @@ class Query(models.Model):
 
         t = time()
         QueryResult(sql, self.database)
+
+        if self.post_cache_sql:
+            QueryResult(self.post_cache_sql, self.database)
+
         t = time() - t
 
         sql = "select %(t)f as rebuild_time, count(*) as row_count from %(table)s" % {
