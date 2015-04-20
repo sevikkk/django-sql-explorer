@@ -50,6 +50,33 @@
                         </div>
                     </div>
                 {% endif %}
+                <div class="form-group">
+                    {% if form.schedule.errors %}{% for error in form.schedule.errors %}
+                        <div class="alert alert-danger">{{ error|escape }}</div>
+                    {% endfor %}{% endif %}
+                    <label for="id_schedule" class="col-sm-2 control-label">Schedule</label>
+                    <div class="col-sm-10">
+                        <input class="form-control" id="id_schedule" maxlength="255" name="schedule" type="text" {% if not can_change %}disabled{% endif %} value="{{ form.schedule.value|default_if_none:"" }}" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    {% if form.cache_table.errors %}{% for error in form.cache_table.errors %}
+                        <div class="alert alert-danger">{{ error|escape }}</div>
+                    {% endfor %}{% endif %}
+                    <label for="id_cache_table" class="col-sm-2 control-label">Cache Table</label>
+                    <div class="col-sm-10">
+                        <input class="form-control" id="id_cache_table" maxlength="255" name="cache_table" type="text" {% if not can_change %}disabled{% endif %} value="{{ form.cache_table.value|default_if_none:"" }}" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    {% if form.database.errors %}{% for error in form.database.errors %}
+                    <div class="alert alert-danger">{{ error|escape }}</div>
+                    {% endfor %}{% endif %}
+                    <label for="id_database" class="col-sm-2 control-label">Database</label>
+                    <div class="col-sm-10">
+                        <input class="form-control" id="id_database" maxlength="255" name="database" type="text" {% if not can_change %}disabled{% endif %} value="{{ form.database.value|default_if_none:"" }}" />
+                    </div>
+                </div>
                 {% if form.sql.errors %}{% for error in form.sql.errors %}
                     <div class="alert alert-danger">{{ error|escape }}</div>
                 {% endfor %}{% endif %}
@@ -79,6 +106,9 @@
                                 <button type="button" class="btn btn-default" id="show_schema_button">Show Schema</button>
                                 <button type="button" class="btn btn-default" id="hide_schema_button">Hide Schema</button>
                                 <button type="button" class="btn btn-default" id="format_button">Format</button>
+                                {% if form.cache_table.value %}
+                                    <input type="submit" value="Save & Rebuild cache" class="btn btn-default" id="rebuild_button" name="rebuild"/>
+                                {% endif %}
                             {% else %}
                                 <input type="submit" value="Refresh" class="btn btn-default" id="refresh_button" />
                                 <button class="btn btn-default download_button" href="csv">Download CSV</button>

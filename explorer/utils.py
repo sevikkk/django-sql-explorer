@@ -20,9 +20,9 @@ def passes_blacklist(sql):
     return not any(write_word in clean.upper() for write_word in app_settings.EXPLORER_SQL_BLACKLIST)
 
 
-def get_connection():
-    return connections[app_settings.EXPLORER_CONNECTION_NAME] if app_settings.EXPLORER_CONNECTION_NAME else connection
-
+def get_connection(database = None):
+    connection_name = database or app_settings.EXPLORER_CONNECTION_NAME
+    return connections[connection_name] if connection_name else connection
 
 
 def schema_info():

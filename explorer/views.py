@@ -263,7 +263,14 @@ class QueryView(ExplorerContextMixin, View):
         success = form.is_valid() and form.save()
         if form.has_changed():
             query.log(request.user)
-        vm = query_viewmodel(request, query, form=form, message="Query saved." if success else None)
+
+        rebuild_cache = False
+        message="Query saved." if success else None
+        if success and request.POST.get("rebuild"):
+            rebuild_cache = True
+            message="Query saved and cache rebuilt"
+
+        vm = query_viewmodel(request, query, form=form, message=message, rebuild_cache=rebuild_cache)
         return self.render_template('explorer/query.html', vm)
 
     @staticmethod
@@ -274,13 +281,16 @@ class QueryView(ExplorerContextMixin, View):
         return query, form
 
 
-def query_viewmodel(request, query, title=None, form=None, message=None, show_results=True):
+def query_viewmodel(request, query, title=None, form=None, message=None, show_results=True, rebuild_cache=False):
     rows = url_get_rows(request)
     res = None
     error = None
     if show_results:
         try:
-            res = query.execute()
+            if rebuild_cache:
+                res = query.execute_cache()
+            else:
+                res = query.execute()
         except DatabaseError as e:
             error = str(e)
     return RequestContext(request, {

@@ -20,6 +20,12 @@ class Query(models.Model):
     created_by_user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_run_date = models.DateTimeField(auto_now=True)
+    cache_table = models.CharField(max_length=40, null=True, blank=True)
+    database = models.CharField(max_length=40, null=True, blank=True)
+    schedule = models.CharField(max_length=40, null=True, blank=True)
+    last_auto_run_date = models.DateTimeField(null=True,blank=True)
+    last_auto_run_result = models.TextField(null=True,blank=True, max_length=10000)
+    autorun_state= models.IntegerField(default=0)
 
     def __init__(self, *args, **kwargs):
         self.params = kwargs.get('params')
@@ -44,10 +50,35 @@ class Query(models.Model):
         A lightweight version of .execute to just check the validity of the SQL.
         Skips the processing associated with QueryResult.
         """
-        QueryResult(self.final_sql())
+        QueryResult(self.final_sql(), self.database)
 
     def execute(self):
-        ret = QueryResult(self.final_sql())
+        ret = QueryResult(self.final_sql(), self.database)
+        ret.process()
+        return ret
+
+    def execute_cache(self):
+        """
+        A lightweight version of .execute to just check the validity of the SQL.
+        Skips the processing associated with QueryResult.
+        """
+        if not self.cache_table:
+            return
+
+        sql = "drop table if exists %(table)s; create table %(table)s as %(sql)s" % {
+            "table": self.cache_table,
+            "sql": self.sql
+        }
+
+        t = time()
+        QueryResult(sql, self.database)
+        t = time() - t
+
+        sql = "select %(t)f as rebuild_time, count(*) as row_count from %(table)s" % {
+            "table": self.cache_table,
+            "t": t
+        }
+        ret = QueryResult(sql, self.database)
         ret.process()
         return ret
 
@@ -90,9 +121,10 @@ class QueryLog(models.Model):
 
 class QueryResult(object):
 
-    def __init__(self, sql):
+    def __init__(self, sql, database = None):
 
         self.sql = sql
+        self.database = database
 
         cursor, duration = self.execute_query()
 
@@ -117,7 +149,7 @@ class QueryResult(object):
         return [ColumnHeader(d[0]) for d in self._description] if self._description else [ColumnHeader('--')]
 
     def _get_numerics(self):
-        conn = get_connection()
+        conn = get_connection(self.database)
         if hasattr(conn.Database, "NUMBER"):
             return [ix for ix, c in enumerate(self._description) if hasattr(c, 'type_code') and c.type_code in conn.Database.NUMBER.values]
         elif self.data:
@@ -159,7 +191,7 @@ class QueryResult(object):
                 r[ix] = t.format(str(r[ix]))
 
     def execute_query(self):
-        conn = get_connection()
+        conn = get_connection(self.database)
         cursor = conn.cursor()
         start_time = time()
 
