@@ -8,7 +8,7 @@ from django.views.generic import ListView
 from django.views.generic.edit import CreateView, DeleteView
 from django.views.decorators.http import require_POST, require_GET
 from django.utils.decorators import method_decorator
-from django.core.urlresolvers import reverse_lazy
+from django.core.urlresolvers import reverse_lazy, reverse
 from django.forms.models import model_to_dict
 from django.http import HttpResponse
 from django.db import DatabaseError
@@ -21,7 +21,7 @@ from explorer.utils import url_get_rows,\
     url_get_log_id,\
     schema_info,\
     url_get_params,\
-    safe_admin_login_prompt,\
+    safe_login_prompt,\
     build_download_response,\
     build_stream_response,\
     user_can_see_query,\
@@ -41,11 +41,13 @@ from functools import wraps
 def view_permission(f):
     @wraps(f)
     def wrap(request, *args, **kwargs):
+
         if not app_settings.EXPLORER_PERMISSION_VIEW(request.user)\
+                and not request.user.has_perm("explorer.query_view") \
                 and not user_can_see_query(request, kwargs)\
                 and not (app_settings.EXPLORER_TOKEN_AUTH_ENABLED()
                          and request.META.get('HTTP_X_API_TOKEN') == app_settings.EXPLORER_TOKEN):
-            return safe_admin_login_prompt(request)
+            return safe_login_prompt(request)
         return f(request, *args, **kwargs)
     return wrap
 
@@ -54,7 +56,7 @@ def change_permission(f):
     @wraps(f)
     def wrap(request, *args, **kwargs):
         if not app_settings.EXPLORER_PERMISSION_CHANGE(request.user):
-            return safe_admin_login_prompt(request)
+            return safe_login_prompt(request)
         return f(request, *args, **kwargs)
     return wrap
 
@@ -112,6 +114,16 @@ def format_sql(request):
     formatted = fmt_sql(sql)
     return HttpResponse(json.dumps({"formatted": formatted}), content_type="application/json")
 
+def check_query_view_perms(user, query):
+    user_groups = None
+    if not user.has_perm('explorer.query_view_any'):
+        user_groups = { a.id for a in user.groups.all() }
+
+    query_groups = { a.id for a in query.groups.all()}
+    if user_groups is not None and not user_groups.intersection(query_groups):
+        return False
+
+    return True
 
 class ListQueryView(ExplorerContextMixin, ListView):
 
@@ -121,8 +133,7 @@ class ListQueryView(ExplorerContextMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super(ListQueryView, self).get_context_data(**kwargs)
-        context['object_list'] = self._build_queries_and_headers()
-        context['recent_queries'] = Query.objects.all().order_by('-last_run_date')[:app_settings.EXPLORER_RECENT_QUERY_COUNT]
+        context['object_list'], context['recent_queries'] = self._build_queries_and_headers()
         return context
 
     def get_queryset(self):
@@ -146,6 +157,7 @@ class ListQueryView(ExplorerContextMixin, ListView):
         :return: A list of model dictionaries representing all the query objects, interleaved with header dictionaries.
         """
 
+        recent = []
         dict_list = []
         rendered_headers = []
         pattern = re.compile('[\W_]+')
@@ -164,12 +176,21 @@ class ListQueryView(ExplorerContextMixin, ListView):
                                   'count': headers[header]})
                 rendered_headers.append(header)
 
+            if not check_query_view_perms(self.request.user, q):
+                continue
+
             model_dict.update({'is_in_category': headers[header] > 1,
                                'collapse_target': collapse_target,
                                'created_at': q.created_at,
                                'created_by_user': six.text_type(q.created_by_user) if q.created_by_user else None})
             dict_list.append(model_dict)
-        return dict_list
+            recent.append((q.last_run_date, q))
+
+        recent.sort(reverse=True)
+        recent = recent[:app_settings.EXPLORER_RECENT_QUERY_COUNT]
+        recent = [b for (a,b) in recent]
+
+        return dict_list, recent
 
     model = Query
 
@@ -249,6 +270,11 @@ class QueryView(ExplorerContextMixin, View):
 
     def get(self, request, query_id):
         query, form = QueryView.get_instance_and_form(request, query_id)
+        if not check_query_view_perms(self.request.user, query):
+            return HttpResponseRedirect(
+                reverse('explorer_index')
+            )
+
         query.save()  # updates the modified date
         vm = query_viewmodel(request, query, form=form)
         return self.render_template('explorer/query.html', vm)

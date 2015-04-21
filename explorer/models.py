@@ -27,6 +27,7 @@ class Query(models.Model):
     last_auto_run_result = models.TextField(null=True,blank=True, max_length=10000)
     autorun_state= models.IntegerField(default=0)
     post_cache_sql = models.TextField(null=True,blank=True, max_length=10000)
+    groups = models.ManyToManyField("auth.group", null=True)
 
     def __init__(self, *args, **kwargs):
         self.params = kwargs.get('params')
@@ -36,6 +37,10 @@ class Query(models.Model):
     class Meta:
         ordering = ['title']
         verbose_name_plural = 'Queries'
+        permissions = (
+            ('query_view', "Can view queries"),
+            ('query_view_any', "Can view any queries"),
+        )
 
     def __unicode__(self):
         return six.text_type(self.title)

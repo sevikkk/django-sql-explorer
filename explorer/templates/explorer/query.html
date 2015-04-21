@@ -50,6 +50,7 @@
                         </div>
                     </div>
                 {% endif %}
+                {% if can_change %}
                 <div class="form-group">
                     {% if form.schedule.errors %}{% for error in form.schedule.errors %}
                         <div class="alert alert-danger">{{ error|escape }}</div>
@@ -91,7 +92,6 @@
                         {% include 'explorer/params.html' %}
                     </div>
                 </div>
-                {% if can_change %}
                      <h5 class="tip"><small>Tip: Use Ctrl+Enter or Cmd+Enter to execute the query</small></h5>
                 {% endif %}
                 <div class="form-group">

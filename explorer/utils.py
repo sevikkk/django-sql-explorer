@@ -128,7 +128,7 @@ def csv_report(query):
 # Helpers
 from django.contrib.admin.forms import AdminAuthenticationForm
 
-from django.contrib.auth.views import login
+from django.contrib.auth.views import login, redirect_to_login
 from django.contrib.auth import REDIRECT_FIELD_NAME
 
 
@@ -144,6 +144,8 @@ def safe_admin_login_prompt(request):
     }
     return login(request, **defaults)
 
+def safe_login_prompt(request):
+    return redirect_to_login(request.get_full_path())
 
 def shared_dict_update(target, source):
     for k_d1 in target:

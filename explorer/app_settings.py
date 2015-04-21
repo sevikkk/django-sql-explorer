@@ -25,3 +25,5 @@ EXPLORER_GET_USER_QUERY_VIEWS = lambda: getattr(settings, 'EXPLORER_USER_QUERY_V
 EXPLORER_TOKEN_AUTH_ENABLED = lambda: getattr(settings, 'EXPLORER_TOKEN_AUTH_ENABLED', False)
 
 EXPLORER_TOKEN = getattr(settings, 'EXPLORER_TOKEN', 'CHANGEME')
+
+EXPLORER_LOGIN_URL = getattr(settings, 'EXPLORER_LOGIN_URL', None)

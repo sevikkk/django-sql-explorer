@@ -1,4 +1,3 @@
-{% load url from future %}
 {% load staticfiles %}
 <!DOCTYPE html>
 <html>
@@ -38,11 +37,14 @@
             <div class="navbar navbar-default navbar-static-top" role="navigation">
               <div class="container">
                 <div class="navbar-header">
-                  <a class="navbar-brand" href="../">SQL Explorer</a>
+                  <a class="navbar-brand" href="{% url 'explorer_index' %}">SQL Explorer</a>
                 </div>
                 <div class="navbar-collapse collapse">
                   <ul class="nav navbar-nav">
                     {% block sql_explorer_navlinks %}{% endblock %}
+                    {% if request.user.username %}
+                       <li> <a href="{% url 'django.contrib.auth.views.logout' %}?next=/">Logout {{ request.user.username }}</a></li>
+                    {% endif %}
                   </ul>
                 </div>
               </div>
