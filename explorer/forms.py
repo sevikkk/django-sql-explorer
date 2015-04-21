@@ -105,4 +105,4 @@ class QueryForm(ModelForm):
 
     class Meta:
         model = Query
-        fields = ['title', 'sql', 'description', 'created_by_user', 'database', 'cache_table', 'schedule']
+        fields = ['title', 'sql', 'description', 'created_by_user', 'database', 'cache_table', 'schedule', 'groups']

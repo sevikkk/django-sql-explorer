@@ -1,5 +1,5 @@
 {% extends "explorer/base.html" %}
-{% load url from future %}
+{% load widget_tweaks %}
 
 {% block sql_explorer_navlinks %}
     {% if can_change %}
@@ -76,6 +76,15 @@
                     <label for="id_database" class="col-sm-2 control-label">Database</label>
                     <div class="col-sm-10">
                         <input class="form-control" id="id_database" maxlength="255" name="database" type="text" {% if not can_change %}disabled{% endif %} value="{{ form.database.value|default_if_none:"" }}" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    {% if form.groups.errors %}{% for error in form.groups.errors %}
+                    <div class="alert alert-danger">{{ error|escape }}</div>
+                    {% endfor %}{% endif %}
+                    <label for="id_groups" class="col-sm-2 control-label">Groups</label>
+                    <div class="col-sm-10">
+                        <td>{% render_field form.groups class="form-control" %}</td>
                     </div>
                 </div>
                 {% if form.sql.errors %}{% for error in form.sql.errors %}
