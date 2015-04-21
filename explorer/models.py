@@ -27,7 +27,7 @@ class Query(models.Model):
     last_auto_run_result = models.TextField(null=True,blank=True, max_length=10000)
     autorun_state= models.IntegerField(default=0)
     post_cache_sql = models.TextField(null=True,blank=True, max_length=10000)
-    groups = models.ManyToManyField("auth.group", null=True)
+    groups = models.ManyToManyField("auth.group")
 
     def __init__(self, *args, **kwargs):
         self.params = kwargs.get('params')
