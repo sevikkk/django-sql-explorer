@@ -115,9 +115,17 @@ def format_sql(request):
     return HttpResponse(json.dumps({"formatted": formatted}), content_type="application/json")
 
 def check_query_view_perms(user, query):
-    user_groups = None
-    if not user.has_perm('explorer.query_view_any'):
-        user_groups = { a.id for a in user.groups.all() }
+    if user.is_staff:
+        return True
+
+    if query.cache_table:
+        # only staff can run scheduled queries
+        return False
+
+    if user.has_perm('explorer.query_view_any'):
+        return True
+
+    user_groups = { a.id for a in user.groups.all() }
 
     query_groups = { a.id for a in query.groups.all()}
     if user_groups is not None and not user_groups.intersection(query_groups):
@@ -162,7 +170,7 @@ class ListQueryView(ExplorerContextMixin, ListView):
         rendered_headers = []
         pattern = re.compile('[\W_]+')
 
-        headers = Counter([q.title.split(' - ')[0] for q in self.object_list])
+        headers = Counter([q.title.split(' - ')[0] for q in self.object_list if check_query_view_perms(self.request.user, q) ])
 
         for q in self.object_list:
             model_dict = model_to_dict(q)
