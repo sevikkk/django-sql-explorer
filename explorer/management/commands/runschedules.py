@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 from traceback import print_exc, print_tb, format_exc
 from crontab import CronTab
 from django.core.management.base import BaseCommand, CommandError
@@ -9,7 +10,15 @@ from pytz import UTC
 class Command(BaseCommand):
     help = "Runs scheduled tasks."
 
-    def handle(self, *args, **options):
+    def add_arguments(self, parser):
+        # Named (optional) arguments
+        parser.add_argument('--wait',
+                            type=int,
+                            dest='wait',
+                            default=0,
+                            help='Run forever with <wait> seconds sleep between runs')
+
+    def do_work(self):
         todo = Query.objects.all().filter(Q(schedule__isnull=False) & ~Q(schedule__startswith ='#') & ~Q(schedule = "") & Q(autorun_state = 0)).order_by("last_auto_run_date")
         #print todo.query.sql_with_params()
         for t in todo:
@@ -46,4 +55,17 @@ class Command(BaseCommand):
 
             t.save()
 
+
+    def handle(self, *args, **options):
+        while 1:
+            print "start"
+            t = time.time()
+            self.do_work()
+            msg = "done in %.2fs" % (time.time() - t)
+            if options['wait']:
+                print msg + ", sleeping"
+                time.sleep(options['wait'])
+            else:
+                print msg + ", exiting"
+                break
 
