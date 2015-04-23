@@ -5,9 +5,9 @@
     {% if can_change %}
       <li{% if not query %} class="active" {% endif %}><a href="../new/">New Query</a></li>
       <li><a href="../play/">Playground</a></li>
+      <li><a href="../logs/">Logs</a></li>
     {% endif %}
     {% if query %}<li class="active"><a href="">Query Detail</a></li>{% endif %}
-    <li><a href="../logs/">Logs</a></li>
 {% endblock %}
 
 {% block sql_explorer_content %}

@@ -205,7 +205,7 @@ class ListQueryView(ExplorerContextMixin, ListView):
 
 class ListQueryLogView(ExplorerContextMixin, ListView):
 
-    @method_decorator(view_permission)
+    @method_decorator(change_permission)
     def dispatch(self, *args, **kwargs):
         return super(ListQueryLogView, self).dispatch(*args, **kwargs)
 
@@ -328,6 +328,7 @@ def query_viewmodel(request, query, title=None, form=None, message=None, show_re
                 res = query.execute()
         except DatabaseError as e:
             error = str(e)
+    query.log(request.user)
     return RequestContext(request, {
             'params': query.available_params(),
             'title': title,

@@ -25,7 +25,7 @@
             {% for object in recent_logs %}
             <tr>
                 <td>{{ object.run_at|date:"SHORT_DATETIME_FORMAT" }}</td>
-                <td>{{ object.run_by_user.email }}</td>
+                <td>{{ object.run_by_user.email }} ({{object.run_by_user.username}})</td>
                 <td class="log-sql">{{ object.sql }}</td>
                 <td>{{ object.database }}</td>
                 <td> {% if object.query_id %}<a href="../{{object.query_id}}/">Query {{ object.query_id }}</a>{% elif object.is_playground %}Playground{% else %}--{% endif %}</td>
