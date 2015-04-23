@@ -203,3 +203,18 @@ def user_can_see_query(request, kwargs):
 
 def fmt_sql(sql):
     return sqlparse.format(sql, reindent=True, keyword_case='upper')
+
+def get_connections_list():
+    conns = connections._databases.keys()
+    conns.sort()
+
+    choices = []
+    for a in conns:
+        if a == "default":
+            continue
+        choices.append((a, a))
+
+    choices.append(('', 'Reports default database'))
+    choices.append(('default', 'Django default database'))
+
+    return choices

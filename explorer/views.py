@@ -25,7 +25,7 @@ from explorer.utils import url_get_rows,\
     build_download_response,\
     build_stream_response,\
     user_can_see_query,\
-    fmt_sql
+    fmt_sql, get_connections_list
 
 try:
     from collections import Counter
@@ -251,20 +251,21 @@ class PlayQueryView(ExplorerContextMixin, View):
 
         if url_get_log_id(request):
             log = get_object_or_404(QueryLog, pk=url_get_log_id(request))
-            query = Query(sql=log.sql, title="Playground")
+            query = Query(sql=log.sql, title="Playground", database=log.database)
             return self.render_with_sql(request, query)
 
         return self.render(request)
 
     def post(self, request):
         sql = request.POST.get('sql')
+        database = request.POST.get('database')
         show_results = request.POST.get('show', True)
-        query = Query(sql=sql, title="Playground")
+        query = Query(sql=sql, title="Playground", database=database)
         query.log(request.user)
         return self.render_with_sql(request, query, show_results)
 
     def render(self, request):
-        return self.render_template('explorer/play.html', RequestContext(request, {'title': 'Playground'}))
+        return self.render_template('explorer/play.html', RequestContext(request, {'title': 'Playground', 'connections': get_connections_list()}))
 
     def render_with_sql(self, request, query, show_results=True):
         return self.render_template('explorer/play.html', query_viewmodel(request, query, title="Playground", show_results=show_results))
@@ -331,6 +332,8 @@ def query_viewmodel(request, query, title=None, form=None, message=None, show_re
             'params': query.available_params(),
             'title': title,
             'shared': query.shared,
+            'connection': query.database,
+            'connections': get_connections_list(),
             'query': query,
             'form': form,
             'message': message,

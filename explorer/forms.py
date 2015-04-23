@@ -3,6 +3,7 @@ from django.forms import ModelForm, Field, ValidationError
 from explorer.models import Query, MSG_FAILED_BLACKLIST
 from django.db import DatabaseError, connections
 from crontab import CronTab
+from explorer.utils import get_connections_list
 
 _ = lambda x: x
 
@@ -63,20 +64,7 @@ class CrontabField(Field):
 class DatabaseField(forms.ChoiceField):
 
     def __init__(self, *args, **kwargs):
-        conns = connections._databases.keys()
-        conns.sort()
-
-        choices = []
-        for a in conns:
-            if a == "default":
-                continue
-            choices.append((a, a))
-
-        choices.append(('', 'Reports default database'))
-        choices.append(('default', 'Django default database'))
-
-        print "bubu", conns
-        super(DatabaseField, self).__init__(choices=choices, *args, **kwargs)
+        super(DatabaseField, self).__init__(choices=get_connections_list(), *args, **kwargs)
 
     def validate(self, value):
         """
