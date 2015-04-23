@@ -15,9 +15,13 @@
         <p>The playground is for experimenting and writing ad-hoc queries. By default, nothing you do here will be saved.</p>
         <form role="form" action="../play/" method="post" id="editor">
             {% csrf_token %}
-            <div class="form-group">
-                <label for="id_database" class="col-sm-2 control-label">Database {{ connection }}</label>
-                <div class="col-sm-10">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <span class="panel-title">
+                        Database ({{ connection }})
+                    </span>
+                </div>
+                <div class="panel-content">
                     <select class="form-control" id="id_database" name="database">
                       {% for value, name in connections %}
                         <option value="{{ value }}" {% ifequal value connection %}selected="selected"{% endifequal %}>{{ name }}</option>
