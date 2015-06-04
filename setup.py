@@ -27,7 +27,9 @@ setup(
     ],
     install_requires=[
         'Django>=1.6.7',
-        'sqlparse==0.1.11'
+        'sqlparse==0.1.11',
+        'crontab',
+        'django-widget-tweaks'
     ],
     include_package_data=True,
     zip_safe = False,

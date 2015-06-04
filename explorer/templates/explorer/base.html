@@ -42,8 +42,11 @@
                 <div class="navbar-collapse collapse">
                   <ul class="nav navbar-nav">
                     {% block sql_explorer_navlinks %}{% endblock %}
-                    {% if request.user.username %}
-                       <li> <a href="{% url 'django.contrib.auth.views.logout' %}?next=/">Logout {{ request.user.username }}</a></li>
+                    {% if request.user.is_staff %}
+                       <li> <a href="/admin/">Admin site</a></li>
+                    {% endif %}
+                    {% if request.user.guid %}
+                       <li> <a href="/logout?next={{base_url}}">Logout {{ request.user.email }}</a></li>
                     {% endif %}
                   </ul>
                 </div>
